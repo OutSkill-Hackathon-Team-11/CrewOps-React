@@ -1,0 +1,40 @@
+# CrewOps — Multi-Agent DevOps Incident Analysis Suite
+# Install: pip install -r requirements.txt
+#
+# For development (includes test runner):
+#   pip install -e .[test]
+#
+# For RAG + UI (full stack):
+#   pip install -e .[rag,ui]
+
+# ── Core LangChain / LangGraph ──────────────────────────────────────────────
+langchain-core>=0.3.0
+langchain>=0.3.0
+langgraph>=0.3.0
+langsmith>=0.1.0
+langchain-openrouter>=0.0.1
+
+# ── Core Utilities ──────────────────────────────────────────────────────────
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+httpx>=0.27.0
+
+# ── JIRA Integration ────────────────────────────────────────────────────────
+jira>=3.8.0
+
+# ── Vector Store & RAG ──────────────────────────────────────────────────────
+lancedb>=0.8.0
+llama-index>=0.11.0
+llama-index-core>=0.11.0
+llama-index-vector-stores-lancedb>=0.3.0
+# Local embeddings — no OpenAI key required
+llama-index-embeddings-huggingface>=0.4.0
+sentence-transformers>=2.2.0
+
+# ── UI ──────────────────────────────────────────────────────────────────────
+streamlit>=1.45.0
+
+# ── Notebook / Display ──────────────────────────────────────────────────────
+ipython>=8.0.0
+ipywidgets>=8.0.0

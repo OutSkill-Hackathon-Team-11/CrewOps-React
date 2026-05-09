@@ -1,0 +1,86 @@
+{
+  "name": "Webhook to Slack Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-alert",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "WebhookTrigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "slack-alert-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "return [\n  {\n    json: {\n      message: `🚨 Alert Received\\n\\nService: ${$json.body.service || 'Unknown'}\\nStatus: ${$json.body.status || 'N/A'}\\nMessage: ${$json.body.message || 'No message'}\\nTimestamp: ${new Date().toISOString()}`\n    }\n  }\n];"
+      },
+      "id": "FormatMessage",
+      "name": "Format Slack Message",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/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",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{$json.message}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "SlackNotification",
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        760,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Slack Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Slack Message": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
