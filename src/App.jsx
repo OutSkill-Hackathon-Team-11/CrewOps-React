@@ -1,10 +1,11 @@
 import { useRef, useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import gsap from 'gsap';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import Analytics from './pages/Analytics';
 import RagTuning from './pages/RagTuning';
+import LandingPage from './pages/LandingPage';
 
 function PageTransition({ children }) {
   const pageRef = useRef(null);
@@ -28,8 +29,9 @@ function PageTransition({ children }) {
   );
 }
 
-export default function App() {
+function DashboardLayout() {
   const mainRef = useRef(null);
+  const location = useLocation();
 
   useEffect(() => {
     gsap.fromTo(mainRef.current, { opacity: 0 }, { opacity: 1, duration: 0.5 });
@@ -71,5 +73,17 @@ export default function App() {
         </Routes>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/dashboard/*" element={<DashboardLayout />} />
+      {/* Redirect any old links to dashboard */}
+      <Route path="/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
+      <Route path="/rag" element={<Navigate to="/dashboard/rag" replace />} />
+    </Routes>
   );
 }

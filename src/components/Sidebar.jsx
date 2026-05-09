@@ -17,9 +17,9 @@ import CustomSelect from './CustomSelect';
 import { AVAILABLE_MODELS } from '../data/tuningConfig';
 
 const navItems = [
-  { path: '/', label: 'Home', icon: Home },
-  { path: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { path: '/rag', label: 'RAG Tuning', icon: Sliders },
+  { path: '/dashboard', label: 'Home', icon: Home },
+  { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+  { path: '/dashboard/rag', label: 'RAG Tuning', icon: Sliders },
 ];
 
 const connections = [
