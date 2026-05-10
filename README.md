@@ -197,19 +197,28 @@ CrewOpsState
 - Slack Incoming Webhook URL *(optional — mock mode by default)*
 - n8n instance with `slack-alert` webhook *(optional)*
 
-### 1. Clone & Install
+### 🚀 Launch Command Center
 
+#### 1. Backend (FastAPI)
 ```bash
-git clone https://github.com/your-org/CrewOps.git
-cd CrewOps
-
+cd backend
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-
-pip install -e ".[rag,ui,test]"  # full stack
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+pip install -e .
+uvicorn api.main:app --reload --port 8000
 ```
 
-### 2. Configure Environment
+#### 2. Frontend (React + Vite)
+```bash
+# In a new terminal (root directory)
+pnpm install
+pnpm run dev
+```
+
+---
+
+### Configure Environment
 
 ```bash
 cp .env.example .env

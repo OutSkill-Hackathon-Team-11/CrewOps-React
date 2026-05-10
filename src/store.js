@@ -15,24 +15,175 @@ const AGENTS = [
 const simulateAgentTime = () => 800 + Math.random() * 1800;
 
 export const useStore = create((set, get) => ({
-  // Auth / API Keys
-  userApiKey: localStorage.getItem('openrouter_api_key') || '',
-  setUserApiKey: (key) => {
-    localStorage.setItem('openrouter_api_key', key);
-    set({ userApiKey: key });
-    // Refetch models with the new key
-    get().fetchModels();
+  // Connections Status
+  connections: [
+    { name: 'OpenRouter', status: 'red' },
+    { name: 'LangSmith', status: 'red' },
+    { name: 'JIRA', status: 'red' },
+  ],
+  fetchConnections: async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/health`);
+      const data = await response.json();
+      if (data.connections) {
+        set({ connections: data.connections });
+      }
+    } catch (e) {
+      console.error("Failed to fetch connection status", e);
+    }
   },
+
+  // Auth / API Keys
+  byokProvider: 'openrouter',
+  liveLogs: [],
+  addLiveLog: (log) => set((state) => ({ 
+    liveLogs: [log, ...state.liveLogs].slice(0, 100) 
+  })),
+  clearLiveLogs: () => set({ liveLogs: [] }),
+
+  byokKeys: {
+    openrouter: localStorage.getItem('openrouter_api_key') || '',
+    openai: localStorage.getItem('openai_api_key') || '',
+    anthropic: localStorage.getItem('anthropic_api_key') || '',
+    google: localStorage.getItem('google_api_key') || '',
+    ollama: localStorage.getItem('ollama_url') || 'http://localhost:11434',
+    nvidia: 'https://integrate.api.nvidia.com/v1',
+  },
+  
+  byokStatus: 'idle',
+  
+  setByokProvider: (provider) => {
+    set({ 
+      byokProvider: provider, 
+      models: [], 
+      byokStatus: 'checking',
+      selectedProvider: provider === 'ollama' ? 'ollama' : (provider === 'nvidia' ? 'nvidia' : (provider === 'openrouter' ? 'openai' : provider))
+    });
+    get().fetchModels();
+    get().checkByokConnection();
+  },
+
+  
+  setByokKey: (provider, key) => {
+    localStorage.setItem(`${provider}_api_key`, key);
+    set((state) => ({
+      byokKeys: { ...state.byokKeys, [provider]: key },
+      byokStatus: 'checking'
+    }));
+    // Throttle checks
+    if (get().byokProvider === provider) {
+      get().fetchModels();
+      get().checkByokConnection();
+    }
+  },
+
+  checkByokConnection: async () => {
+    const state = get();
+    const provider = state.byokProvider;
+    const key = state.byokKeys[provider];
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+    try {
+      if (provider === 'ollama') {
+        const host = state.byokKeys.ollama || 'http://localhost:11434';
+        const resp = await fetch(`${apiUrl}/models/ollama?base_url=${encodeURIComponent(host)}`);
+        const data = await resp.json();
+        set({ byokStatus: data.models?.length >= 0 ? 'online' : 'offline' });
+      } else if (provider === 'openrouter') {
+        set({ byokStatus: localStorage.getItem('openrouter_api_key') ? 'online' : 'idle' });
+      } else if (provider === 'nvidia') {
+        set({ byokStatus: state.byokKeys.nvidia && localStorage.getItem('nvidia_api_key') ? 'online' : 'idle' });
+      } else {
+        set({ byokStatus: key ? 'online' : 'idle' });
+      }
+
+    } catch (e) {
+      set({ byokStatus: 'offline' });
+    }
+  },
+
+
+  // Legacy compatibility (keep userApiKey as an alias for openrouter key)
+  userApiKey: localStorage.getItem('openrouter_api_key') || '',
+  setUserApiKey: (key) => get().setByokKey('openrouter', key),
+
 
   // Models
   models: [],
   isLoadingModels: false,
+  selectedProvider: 'openai',
+  setSelectedProvider: (provider) => set({ selectedProvider: provider }),
   fetchModels: async () => {
+    const state = get();
     set({ isLoadingModels: true });
-    const { userApiKey } = get();
-    const models = await fetchOpenRouterModels(userApiKey);
+    
+    let models = [];
+    try {
+      if (state.byokProvider === 'openrouter') {
+        const key = state.byokKeys.openrouter;
+        models = await fetchOpenRouterModels(key);
+      } else if (state.byokProvider === 'ollama') {
+        const host = state.byokKeys.ollama || 'http://localhost:11434';
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        try {
+          // Use our backend proxy to avoid CORS issues
+          const response = await fetch(`${apiUrl}/models/ollama?base_url=${encodeURIComponent(host)}`);
+          const data = await response.json();
+          if (data.models) {
+            models = data.models.map(m => {
+              const modelName = m.name || m;
+              return {
+                id: modelName,
+                name: modelName,
+                provider: 'ollama',
+                category: (
+                  modelName.includes('70b') || 
+                  modelName.includes('34b') || 
+                  modelName.includes('r1') || 
+                  modelName.includes('vision') ||
+                  modelName.includes('q')
+                ) ? 'reasoning' : 'fast'
+              };
+            });
+          }
+
+        } catch (e) {
+          console.warn("Ollama proxy failed", e);
+        }
+      } else if (provider === 'nvidia') {
+        const url = state.byokKeys.nvidia;
+        const key = localStorage.getItem('nvidia_api_key');
+        if (key) {
+          try {
+            const response = await fetch(`${url}/models`, {
+              headers: { 'Authorization': `Bearer ${key}` }
+            });
+            const data = await response.json();
+            if (data.data) {
+              models = data.data.map(m => ({
+                id: m.id,
+                name: m.id,
+                provider: 'nvidia',
+                category: (m.id.includes('70b') || m.id.includes('large')) ? 'reasoning' : 'fast'
+              }));
+            }
+          } catch (e) {
+            console.warn("Nvidia fetch failed", e);
+          }
+        }
+      } else {
+
+        // Direct providers fallback to basic lists or future direct API implementation
+        models = [];
+      }
+    } catch (error) {
+      console.error('Error fetching models:', error);
+    }
+    
     set({ models, isLoadingModels: false });
   },
+
   // Navigation
   activePage: 'home',
   setActivePage: (page) => set({ activePage: page }),
@@ -132,7 +283,10 @@ export const useStore = create((set, get) => ({
           smart_model: state.tuning.reasoning_model,
           jira_mock: true,
           notif_mock: true,
-          source: state.activeTab === 'log' ? 'custom' : 'sample'
+          source: state.activeTab === 'log' ? 'custom' : 'sample',
+          provider: state.byokProvider,
+          api_key: state.byokKeys[state.byokProvider],
+          base_url: state.byokProvider === 'ollama' ? state.byokKeys.ollama : undefined
         }),
       });
 

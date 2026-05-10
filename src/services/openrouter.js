@@ -34,17 +34,25 @@ export const fetchOpenRouterModels = async (apiKey) => {
         id.includes('flash') || 
         id.includes('8b') || 
         id.includes('7b') ||
+        id.includes('turbo') ||
+        id.includes('lite') ||
+        id.includes('speed') ||
         name.includes('mini') ||
         name.includes('flash') ||
         name.includes('haiku') ||
+        name.includes('lite') ||
         id.includes('small');
+
+
+      const provider = model.id.split('/')[0] || 'other';
 
       return {
         id: model.id,
         name: model.name,
         pricing: model.pricing,
         context_length: model.context_length,
-        category: isFast ? 'fast' : 'reasoning'
+        category: isFast ? 'fast' : 'reasoning',
+        provider: provider
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {

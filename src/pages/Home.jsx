@@ -1,12 +1,29 @@
 import { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
-import { Upload, FileText, Terminal, Brain, ArrowRight } from 'lucide-react';
+import { Upload, FileText, Terminal, Brain, ArrowRight, Activity } from 'lucide-react';
+
 import { useStore } from '../store';
 import { sampleLogs, severityColors } from '../data/mockData';
 import PipelineProgress from '../components/PipelineProgress';
 
 export default function Home() {
-  const { activeTab, setActiveTab, selectedSample, setSelectedSample, logContent, setLogContent, startPipeline, pipelineStatus } = useStore();
+  const { 
+    activeTab, setActiveTab, selectedSample, setSelectedSample, 
+    logContent, setLogContent, startPipeline, pipelineStatus,
+    liveLogs, addLiveLog, clearLiveLogs
+  } = useStore();
+
+  useEffect(() => {
+    if (activeTab === 'live') {
+      const socket = new WebSocket('ws://localhost:8000/ws/logs');
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        addLiveLog(data);
+      };
+      return () => socket.close();
+    }
+  }, [activeTab]);
+
   const heroRef = useRef(null);
   const subtitleRef = useRef(null);
   const inputAreaRef = useRef(null);
@@ -53,9 +70,10 @@ export default function Home() {
         <div className="flex gap-1 p-1 glass rounded-xl w-fit mx-auto mb-6">
           {[
             { id: 'log', label: 'Log Input', icon: Terminal },
+            { id: 'live', label: 'Live Stream', icon: Activity },
             { id: 'sample', label: 'Sample Logs', icon: FileText },
           ].map((tab) => {
-            const Icon = tab.icon;
+            const Icon = tab.icon || Terminal;
             const isActive = activeTab === tab.id;
             return (
               <button
@@ -75,7 +93,7 @@ export default function Home() {
         </div>
 
         {/* Tab Content */}
-        <div className="glass rounded-2xl p-6">
+        <div className="glass rounded-2xl p-6 min-h-[340px]">
           {activeTab === 'log' ? (
             <div
               onDragOver={handleDragOver}
@@ -87,8 +105,30 @@ export default function Home() {
                   : 'border-white/[0.08] hover:border-white/[0.12]'
               }`}
             >
+              <input
+                type="file"
+                id="log-upload"
+                className="hidden"
+                accept=".log,.txt,.json"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = () => setLogContent(reader.result);
+                    reader.readAsText(file);
+                  }
+                }}
+              />
               <Upload size={32} className="mx-auto text-slate-600 mb-3" />
-              <p className="text-sm text-slate-400 mb-1">Drop a log file here, or paste directly</p>
+              <p className="text-sm text-slate-400 mb-1">
+                Drop a log file here, or{' '}
+                <label 
+                  htmlFor="log-upload" 
+                  className="text-blue-400 hover:text-blue-300 cursor-pointer underline underline-offset-4 decoration-blue-400/30 hover:decoration-blue-300 transition-all font-medium"
+                >
+                  browse
+                </label>
+              </p>
               <p className="text-xs text-slate-600">Supports .log, .txt, .json (max 10MB)</p>
               <textarea
                 value={logContent}
@@ -103,6 +143,46 @@ export default function Home() {
                   <span>{logContent.split('\n').length} lines loaded</span>
                 </div>
               )}
+            </div>
+          ) : activeTab === 'live' ? (
+            <div className="flex flex-col h-[300px]">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Real-time Feed</span>
+                </div>
+                <button 
+                  onClick={clearLiveLogs}
+                  className="text-[10px] font-bold text-slate-500 hover:text-slate-300 uppercase tracking-widest transition-colors"
+                >
+                  Clear Feed
+                </button>
+              </div>
+              <div className="flex-1 bg-black/40 rounded-xl border border-white/[0.06] overflow-y-auto p-4 font-mono text-[11px] space-y-1 custom-scrollbar">
+                {liveLogs.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-slate-600 italic">
+                    Waiting for logs from stream_logs.py...
+                  </div>
+                ) : (
+                  liveLogs.map((log) => {
+                    const isError = log.content.includes('ERROR');
+                    const isWarn = log.content.includes('WARN');
+                    return (
+                      <div 
+                        key={log.id} 
+                        onClick={() => setLogContent(log.content)}
+                        className="group flex gap-3 hover:bg-white/[0.03] cursor-pointer rounded px-2 py-0.5 transition-all"
+                      >
+                        <span className="text-slate-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
+                        <span className={`break-all ${isError ? 'text-rose-400' : isWarn ? 'text-amber-400' : 'text-slate-300'}`}>
+                          {log.content}
+                        </span>
+                        <ArrowRight size={10} className="ml-auto text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3">

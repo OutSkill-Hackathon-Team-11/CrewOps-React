@@ -13,7 +13,10 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from langchain_openrouter import ChatOpenRouter
+
 from langchain_core.tracers.langchain import LangChainTracer
 
 from crewops.agents import (
@@ -33,6 +36,59 @@ app = FastAPI(
     title="CrewOps API",
     version="1.0.0",
 )
+
+from fastapi import WebSocket, WebSocketDisconnect
+from typing import List
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except:
+                continue
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/logs")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+@app.post("/webhook/logs")
+async def receive_logs(request: Request):
+    try:
+        data = await request.json()
+        # Expecting {"log": "..."} or raw string
+        log_entry = data.get("log", str(data))
+        
+        # Broadcast to all WS clients
+        await manager.broadcast({
+            "timestamp": datetime.now().isoformat(),
+            "content": log_entry,
+            "id": str(uuid.uuid4())
+        })
+        return {"status": "ok"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+from datetime import datetime
+
 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,6 +116,11 @@ class AnalyzeRequest(BaseModel):
     notif_mock: bool = True
 
     source: Optional[str] = "api"
+    
+    provider: str = "openrouter"
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
+
 
 
 # =========================================================
@@ -178,12 +239,59 @@ def startup_event():
 # HEALTH
 # =========================================================
 
+@app.get("/models/ollama")
+async def get_ollama_models(base_url: str = "http://localhost:11434"):
+    import httpx
+    try:
+        async with httpx.AsyncClient() as client:
+            # Try /api/tags first (standard)
+            resp = await client.get(f"{base_url}/api/tags", timeout=8.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                # Handle different Ollama versions
+                models = data.get("models", [])
+                if not models and "tags" in data:
+                    models = data["tags"]
+                return {"models": models}
+            return {"models": []}
+    except Exception as e:
+        print(f"Ollama discovery error: {e}")
+        return {"models": [], "error": str(e)}
+
+
 @app.get("/health")
 def health():
+
+    # Dynamic connection checks
+    connections = [
+        {
+            "name": "OpenRouter",
+            "status": "green" if os.environ.get("OPENROUTER_API_KEY") else "red"
+        },
+        {
+            "name": "LangSmith",
+            "status": "green" if os.environ.get("LANGCHAIN_API_KEY") and os.environ.get("LANGCHAIN_TRACING_V2", "").lower() == "true" else "red"
+        },
+        {
+            "name": "JIRA",
+            "status": "green" if os.environ.get("JIRA_API_TOKEN") and os.environ.get("JIRA_MOCK_MODE", "").lower() == "false" else "red"
+        },
+        {
+            "name": "n8n",
+            "status": "green" if os.environ.get("N8N_WEBHOOK_URL") and os.environ.get("NOTIFICATION_MOCK_MODE", "").lower() == "false" else "red"
+        },
+        {
+            "name": "Slack",
+            "status": "green" if os.environ.get("SLACK_WEBHOOK_URL") and os.environ.get("NOTIFICATION_MOCK_MODE", "").lower() == "false" else "red"
+        }
+    ]
+    
     return {
         "status": "ok",
         "service": "crewops-api",
+        "connections": connections
     }
+
 
 
 # =========================================================
@@ -209,8 +317,55 @@ async def analyze_logs(payload: AnalyzeRequest):
     )
 
     # -----------------------------------------------------
+    # Configure LLMs for this request
+    # -----------------------------------------------------
+    
+    provider = payload.provider.lower()
+    api_key = payload.api_key or os.environ.get("OPENROUTER_API_KEY")
+    base_url = payload.base_url
+
+    def create_llm(model_name, temp, tokens):
+        if provider == "ollama":
+            return ChatOllama(
+                model=model_name,
+                base_url=base_url or "http://localhost:11434",
+                temperature=temp,
+            )
+        elif provider == "openai":
+            return ChatOpenAI(
+                model=model_name,
+                api_key=api_key,
+                temperature=temp,
+                max_tokens=tokens,
+            )
+        elif provider == "openrouter":
+            return ChatOpenRouter(
+                model=model_name,
+                api_key=api_key,
+                temperature=temp,
+                max_tokens=tokens,
+            )
+        else:
+            # Fallback to OpenRouter
+            return ChatOpenRouter(
+                model=model_name,
+                api_key=api_key,
+                temperature=temp,
+                max_tokens=tokens,
+            )
+
+    # Note: This modifies global state in crewops.agents
+    # Safe for local hackathon usage.
+    configure_llms(
+        fast=create_llm(payload.fast_model, 0.1, 2000),
+        reasoning=create_llm(payload.smart_model, 0.2, 4000),
+        generation=create_llm(payload.fast_model, 0.3, 6000),
+    )
+
+    # -----------------------------------------------------
     # Initial LangGraph state
     # -----------------------------------------------------
+
 
     initial_state = {
         "raw_logs": payload.raw_logs,

@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Analytics from './pages/Analytics';
 import RagTuning from './pages/RagTuning';
 import LandingPage from './pages/LandingPage';
+import Docs from './pages/Docs';
 
 function PageTransition({ children }) {
   const pageRef = useRef(null);
@@ -70,6 +71,14 @@ function DashboardLayout() {
               </PageTransition>
             }
           />
+          <Route
+            path="/docs"
+            element={
+              <PageTransition>
+                <Docs />
+              </PageTransition>
+            }
+          />
         </Routes>
       </main>
     </div>
@@ -84,6 +93,7 @@ export default function App() {
       {/* Redirect any old links to dashboard */}
       <Route path="/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
       <Route path="/rag" element={<Navigate to="/dashboard/rag" replace />} />
+      <Route path="/docs" element={<Navigate to="/dashboard/docs" replace />} />
     </Routes>
   );
 }

@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
-import { Terminal, Monitor, Cpu, Shield, Globe, Layers, Zap, CheckCircle, ChevronRight, Copy, Apple } from "lucide-react";
+import { 
+  Terminal, Monitor, Cpu, Shield, Globe, Layers, Zap, 
+  CheckCircle, ChevronRight, Copy, Apple, Github, Linkedin 
+} from "lucide-react";
+
 import "./LandingPage.css";
 
 export default function LandingPage() {
@@ -375,103 +379,6 @@ export default function LandingPage() {
                     </div>
                 </section>
 
-                <section className="pipeline-section" id="pipeline">
-                    <div className="section-title">
-                        <h2>LangGraph <span>Pipeline Architecture</span></h2>
-                        <p>A deterministic state-machine orchestration with parallel execution and conditional routing.</p>
-                    </div>
-                    
-                    <div className="pipeline-flow-container">
-                        <div className="flow-track">
-                            {/* Column 1: Start */}
-                            <div className="flow-column">
-                                <div className="flow-node start">
-                                    <span className="node-tag">ENTRY</span>
-                                    <div className="node-box">
-                                        <div className="node-icon">📥</div>
-                                        <h4>Raw Logs</h4>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flow-connector"></div>
-
-                            {/* Column 2: Triage */}
-                            <div className="flow-column">
-                                <div className="flow-node">
-                                    <div className="node-box">
-                                        <div className="node-icon">🤖</div>
-                                        <h4>Classifier</h4>
-                                    </div>
-                                </div>
-                                <div className="flow-connector vertical"></div>
-                                <div className="flow-node">
-                                    <div className="node-box">
-                                        <div className="node-icon">⚖️</div>
-                                        <h4>Severity</h4>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flow-connector"></div>
-
-                            {/* Column 3: Logic Split */}
-                            <div className="flow-column wide">
-                                <div className="split-wrapper">
-                                    <div className="split-branch top">
-                                        <span className="branch-label">P1 / P2 INCIDENTS</span>
-                                        <div className="flow-node-row">
-                                            <div className="flow-node highlight">
-                                                <div className="node-box">
-                                                    <div className="node-icon">🔍</div>
-                                                    <h4>RCA Agent</h4>
-                                                </div>
-                                            </div>
-                                            <div className="flow-connector"></div>
-                                            <div className="flow-node highlight">
-                                                <div className="node-box">
-                                                    <div className="node-icon">🛠️</div>
-                                                    <h4>Planner</h4>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="split-branch bottom">
-                                        <span className="branch-label">P3 / P4 INCIDENTS</span>
-                                        <div className="flow-node">
-                                            <div className="node-box">
-                                                <div className="node-icon">📚</div>
-                                                <h4>Cookbook</h4>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flow-connector"></div>
-
-                            {/* Column 4: Output */}
-                            <div className="flow-column">
-                                <div className="flow-node-group">
-                                    <span className="group-label">PARALLEL OPS</span>
-                                    <div className="flow-node">
-                                        <div className="node-box accent-blue">
-                                            <div className="node-icon">🎫</div>
-                                            <h4>JIRA Agent</h4>
-                                        </div>
-                                    </div>
-                                    <div className="flow-node">
-                                        <div className="node-box accent-purple">
-                                            <div className="node-icon">🔔</div>
-                                            <h4>Notification</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
                 <section className="strategy-section" id="strategy">
                     <div className="section-title">
                         <h2>3-Tier <span>Agentic Strategy</span></h2>
@@ -621,20 +528,38 @@ export default function LandingPage() {
                     </div>
                 </section>
 
-                <section className="tech-stack-section">
+                <section className="tech-stack-section" id="tech">
                     <div className="section-title">
-                        <h2>Modern <span>Technology Stack</span></h2>
-                        <p>Built for the AI Post-Training Hackathon.</p>
+                        <h2>Engineered for <span>Intelligence</span></h2>
+                        <p>A production-ready stack built for the AI Post-Training Hackathon.</p>
                     </div>
                     <div className="tech-grid">
-                        <div className="tech-card"><h4>LangGraph</h4><p>Agent Orchestration</p></div>
-                        <div className="tech-card"><h4>LanceDB</h4><p>Vector Store</p></div>
-                        <div className="tech-card"><h4>LlamaIndex</h4><p>RAG Framework</p></div>
-                        <div className="tech-card"><h4>LangSmith</h4><p>Observability</p></div>
-                        <div className="tech-card"><h4>OpenRouter</h4><p>LLM Gateway</p></div>
-                        <div className="tech-card"><h4>n8n</h4><p>Automation</p></div>
+                        {[
+                            { name: 'LangGraph', role: 'Agent Orchestration', desc: 'Cyclic DAG state machines' },
+                            { name: 'LanceDB', role: 'Vector Store', desc: 'Local serverless RAG' },
+                            { name: 'FastAPI', role: 'Operational API', desc: 'High-speed Python backend' },
+                            { name: 'OpenRouter', role: 'LLM Gateway', desc: 'Cross-platform workflows' },
+                            { name: 'Ollama', role: 'Local Inference', desc: 'Air-gapped model execution' },
+                            { name: 'LangSmith', role: 'Observability', desc: 'Full-chain trace analysis' },
+                            { name: 'HuggingFace', role: 'Embeddings', desc: 'Local BGE-small indexing' },
+                            { name: 'React + Vite', role: 'Console UI', desc: 'Modern reactive dashboard' },
+                            { name: 'n8n', role: 'Automation', desc: 'Cross-platform workflows' },
+                        ].map((tech) => (
+                            <div key={tech.name} className="tech-card group relative overflow-hidden">
+                                <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="relative z-10">
+                                    <h4 className="text-white font-black uppercase tracking-widest text-sm mb-1">{tech.name}</h4>
+                                    <p className="text-[10px] text-blue-400 font-bold uppercase tracking-tighter mb-3">{tech.role}</p>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">{tech.desc}</p>
+                                </div>
+                                <div className="absolute bottom-0 right-0 p-2 opacity-10 group-hover:opacity-30 transition-opacity">
+                                    <Cpu size={24} />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </section>
+
 
                 <section className="team-section" id="team">
                     <div className="section-title">
@@ -649,14 +574,39 @@ export default function LandingPage() {
                             { name: "Prakash Patil", initial: "PP", colors: "#f8b500, #00f260" },
                             { name: "Prathiba", initial: "P", colors: "#00f260, #00f2fe" },
                             { name: "Purushotham", initial: "P", colors: "#00f2fe, #b026ff" },
-                            { name: "Rakshit Rangarajan", initial: "R", colors: "#b026ff, #00f260" },
+                            { 
+                                name: "Rakshit Rangarajan", 
+                                initial: "R", 
+                                colors: "#b026ff, #00f260",
+                                image: "/Rakshit.jpeg",
+                                github: "https://github.com/Rakshit-Rangarajan",
+                                linkedin: "https://www.linkedin.com/in/rakshit-rangarajan/",
+                                website: "https://rakshitr.co.in"
+                            },
                             { name: "Sannith K K", initial: "S", colors: "#f8b500, #4facfe" }
                         ].map(member => (
-                            <div className="team-member" key={member.name}>
-                                <div className="member-avatar" style={{ '--bg-gradient': `linear-gradient(135deg, ${member.colors})` }}>{member.initial}</div>
+                            <div className="team-member group" key={member.name}>
+                                <div 
+                                    className="member-avatar relative overflow-hidden" 
+                                    style={{ '--bg-gradient': `linear-gradient(135deg, ${member.colors})` }}
+                                >
+                                    {member.image ? (
+                                        <img src={member.image} alt={member.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                    ) : (
+                                        member.initial
+                                    )}
+                                    {member.github && (
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                            <a href={member.github} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Github size={18} /></a>
+                                            <a href={member.linkedin} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Linkedin size={18} /></a>
+                                            <a href={member.website} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Globe size={18} /></a>
+                                        </div>
+                                    )}
+                                </div>
                                 <h4>{member.name}</h4>
                             </div>
                         ))}
+
                     </div>
                 </section>
             </main>

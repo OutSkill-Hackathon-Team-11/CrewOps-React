@@ -20,33 +20,35 @@ const AgentCard = forwardRef(({ agent, index, isActive }, ref) => {
     <div
       ref={ref}
       data-agent-id={agent.id}
-      className={`relative flex flex-col items-center gap-2.5 p-4 rounded-xl border transition-all duration-500 min-w-[100px] ${
+      className={`relative flex flex-col items-center gap-3 p-5 rounded-2xl border transition-all duration-500 min-w-[110px] ${
         cfg.border
       } ${
         agent.status === 'processing'
-          ? 'bg-blue-500/5 shadow-[0_0_20px_rgba(59,130,246,0.08)]'
+          ? 'bg-blue-500/8 shadow-[0_0_25px_rgba(59,130,246,0.1)]'
           : agent.status === 'done'
-          ? 'bg-emerald-500/5 shadow-[0_0_20px_rgba(52,211,153,0.06)]'
-          : 'bg-white/[0.02]'
-      } ${isActive ? 'scale-105' : ''}`}
+          ? 'bg-emerald-500/8 shadow-[0_0_25px_rgba(52,211,153,0.08)]'
+          : 'bg-white/[0.03]'
+      } ${isActive ? 'scale-110' : ''}`}
     >
       {/* Icon */}
-      <div className={`relative ${agent.status === 'done' ? cfg.icon : 'text-slate-500'}`}>
+      <div className={`relative ${agent.status === 'done' ? cfg.icon : 'text-slate-400'}`}>
         {agent.status === 'processing' ? (
-          <Loader2 size={22} className="animate-spin text-blue-400" />
+          <Loader2 size={24} className="animate-spin text-blue-400" />
         ) : agent.status === 'done' ? (
-          <div className="w-[22px] h-[22px] rounded-full bg-emerald-500/20 flex items-center justify-center">
-            <Check size={14} className="text-emerald-400" />
+          <div className="w-[24px] h-[24px] rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <Check size={16} className="text-emerald-400" />
           </div>
         ) : (
-          <Icon size={20} strokeWidth={1.5} />
+          <Icon size={22} strokeWidth={1.5} />
         )}
       </div>
 
       {/* Label */}
-      <span className={`text-[11px] font-medium leading-tight text-center ${cfg.text}`}>
+      <span className={`text-[12px] font-bold tracking-tight leading-tight text-center ${cfg.text}`}>
         {agent.label}
       </span>
+
+
 
       {/* Time */}
       {agent.status === 'done' && (
