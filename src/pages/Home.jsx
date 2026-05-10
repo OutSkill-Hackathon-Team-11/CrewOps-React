@@ -6,6 +6,38 @@ import { useStore } from '../store';
 import { sampleLogs, severityColors } from '../data/mockData';
 import PipelineProgress from '../components/PipelineProgress';
 
+const getDefaultStreamUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  try {
+    const url = new URL(apiUrl);
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    url.pathname = '/ws/logs';
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return 'ws://localhost:8000/ws/logs';
+  }
+};
+
+const normalizeWebSocketUrl = (value) => {
+  const trimmed = value.trim();
+  const url = new URL(trimmed);
+
+  if (url.protocol === 'http:') {
+    url.protocol = 'ws:';
+  } else if (url.protocol === 'https:') {
+    url.protocol = 'wss:';
+  }
+
+  if (!['ws:', 'wss:'].includes(url.protocol)) {
+    throw new Error('Use a ws:// or wss:// URL.');
+  }
+
+  return url.toString();
+};
+
 export default function Home() {
   const { 
     activeTab, setActiveTab, selectedSample, setSelectedSample, 
@@ -13,22 +45,82 @@ export default function Home() {
     liveLogs, addLiveLog, clearLiveLogs
   } = useStore();
 
-  useEffect(() => {
-    if (activeTab === 'live') {
-      const socket = new WebSocket('ws://localhost:8000/ws/logs');
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        addLiveLog(data);
-      };
-      return () => socket.close();
-    }
-  }, [activeTab]);
-
   const heroRef = useRef(null);
   const subtitleRef = useRef(null);
   const inputAreaRef = useRef(null);
   const pipelineRef = useRef(null);
+  const socketRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
+  const [liveStreamUrl, setLiveStreamUrl] = useState(getDefaultStreamUrl);
+  const [liveStreamStatus, setLiveStreamStatus] = useState('idle');
+  const [liveStreamError, setLiveStreamError] = useState('');
+
+  const isListening = liveStreamStatus === 'connecting' || liveStreamStatus === 'connected';
+
+  const stopListening = (resetStatus = true) => {
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    if (resetStatus) {
+      setLiveStreamStatus('idle');
+    }
+  };
+
+  const startListening = () => {
+    let url;
+
+    try {
+      url = normalizeWebSocketUrl(liveStreamUrl);
+    } catch (error) {
+      setLiveStreamError(error.message || 'Enter a valid websocket URL.');
+      setLiveStreamStatus('idle');
+      return;
+    }
+
+    stopListening();
+    setLiveStreamUrl(url);
+    setLiveStreamError('');
+    setLiveStreamStatus('connecting');
+
+    const socket = new WebSocket(url);
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      setLiveStreamStatus('connected');
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        addLiveLog(JSON.parse(event.data));
+      } catch {
+        addLiveLog({
+          id: crypto.randomUUID?.() || `live-${Date.now()}-${Math.random()}`,
+          timestamp: new Date().toISOString(),
+          content: event.data,
+        });
+      }
+    };
+
+    socket.onerror = () => {
+      setLiveStreamError('Could not connect to the websocket stream.');
+    };
+
+    socket.onclose = () => {
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+        setLiveStreamStatus('idle');
+      }
+    };
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'live') {
+      stopListening();
+    }
+  }, [activeTab]);
+
+  useEffect(() => () => stopListening(false), []);
 
   useEffect(() => {
     gsap.fromTo(heroRef.current, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out' });
@@ -146,22 +238,59 @@ export default function Home() {
             </div>
           ) : activeTab === 'live' ? (
             <div className="flex flex-col h-[300px]">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Real-time Feed</span>
+              <div className="flex flex-col gap-3 mb-4 px-2">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      liveStreamStatus === 'connected'
+                        ? 'bg-emerald-500 animate-pulse'
+                        : liveStreamStatus === 'connecting'
+                          ? 'bg-amber-500 animate-pulse'
+                          : 'bg-slate-600'
+                    }`} />
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                      {liveStreamStatus === 'connected'
+                        ? 'Listening'
+                        : liveStreamStatus === 'connecting'
+                          ? 'Connecting'
+                          : 'Real-time Feed'}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={clearLiveLogs}
+                    className="text-[10px] font-bold text-slate-500 hover:text-slate-300 uppercase tracking-widest transition-colors self-start md:self-auto"
+                  >
+                    Clear Feed
+                  </button>
                 </div>
-                <button 
-                  onClick={clearLiveLogs}
-                  className="text-[10px] font-bold text-slate-500 hover:text-slate-300 uppercase tracking-widest transition-colors"
-                >
-                  Clear Feed
-                </button>
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
+                  <input
+                    type="url"
+                    value={liveStreamUrl}
+                    onChange={(e) => setLiveStreamUrl(e.target.value)}
+                    disabled={isListening}
+                    placeholder="ws://localhost:8000/ws/logs"
+                    className="min-w-0 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-slate-300 font-mono placeholder:text-slate-600 focus:outline-none focus:border-blue-500/30 disabled:opacity-60"
+                  />
+                  <button
+                    onClick={isListening ? () => stopListening() : startListening}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
+                      isListening
+                        ? 'bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/20'
+                        : 'bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20'
+                    }`}
+                  >
+                    {isListening ? 'Stop' : 'Listen'}
+                  </button>
+                </div>
+                {liveStreamError && (
+                  <p className="text-[11px] text-rose-300">{liveStreamError}</p>
+                )}
               </div>
               <div className="flex-1 bg-black/40 rounded-xl border border-white/[0.06] overflow-y-auto p-4 font-mono text-[11px] space-y-1 custom-scrollbar">
                 {liveLogs.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-slate-600 italic">
-                    Waiting for logs from stream_logs.py...
+                    {isListening ? 'Waiting for logs from websocket...' : 'Enter a websocket URL and click Listen.'}
                   </div>
                 ) : (
                   liveLogs.map((log) => {
