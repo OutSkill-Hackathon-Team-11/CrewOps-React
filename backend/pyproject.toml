@@ -38,7 +38,9 @@ rag = [
     "sentence-transformers>=2.2.0",
 ]
 ui = [
+    "fastapi==0.136.1",
     "streamlit>=1.45.0",
+    "uvicorn==0.46.0",
 ]
 
 [tool.setuptools.packages.find]
