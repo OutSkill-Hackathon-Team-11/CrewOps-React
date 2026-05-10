@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
-import { 
-  Terminal, Monitor, Cpu, Shield, Globe, Layers, Zap, 
-  CheckCircle, ChevronRight, Copy, Apple, Github, Linkedin 
+import {
+    Terminal, Monitor, Cpu, Shield, Globe, Layers, Zap,
+    CheckCircle, ChevronRight, Copy, Apple, Github, Linkedin, Twitter, Code
 } from "lucide-react";
 
 import "./LandingPage.css";
@@ -568,42 +568,147 @@ export default function LandingPage() {
                     </div>
                     <div className="team-grid">
                         {[
-                            { name: "Avin", initial: "A", colors: "#00f2fe, #4facfe" },
-                            { name: "Charchit Bansal", initial: "CB", colors: "#4facfe, #b026ff" },
-                            { name: "Monalisa Das", initial: "MD", colors: "#b026ff, #f8b500" },
-                            { name: "Prakash Patil", initial: "PP", colors: "#f8b500, #00f260" },
-                            { name: "Prathiba", initial: "P", colors: "#00f260, #00f2fe" },
-                            { name: "Purushotham", initial: "P", colors: "#00f2fe, #b026ff" },
-                            { 
-                                name: "Rakshit Rangarajan", 
-                                initial: "R", 
+                            {
+                                name: "Sannith Kumar K",
+                                role: "Lead",
+                                initial: "SK",
+                                colors: "#b026ff, #00f260",
+                                image: "/Sannith.jpg",
+                                linkedin: "https://www.linkedin.com/in/sannithkk",
+                                github: "",
+                                website: "",
+                                x: "",
+                                "dev.to": "",
+                                Bio: ""
+                            },
+                            {
+                                name: "Charchit Bansal",
+                                role: "Full Stack Developer",
+                                initial: "CB",
+                                colors: "#4facfe, #b026ff",
+                                image: "/Charchit.jpg",
+                                linkedin: "https://www.linkedin.com/in/charchit-bansal",
+                                github: "https://github.com/charchit95",
+                                website: "https://charchitbansal.com/",
+                                x: "",
+                                "dev.to": "",
+                                Bio: "Always up for a game of chess and enjoy strategic thinking both on and off the board."
+                            },
+                            {
+                                name: "Rakshit Rangarajan",
+                                role: "Full Stack Dev and AI Enthusiast",
+                                initial: "R",
                                 colors: "#b026ff, #00f260",
                                 image: "/Rakshit.jpeg",
-                                github: "https://github.com/Rakshit-Rangarajan",
                                 linkedin: "https://www.linkedin.com/in/rakshit-rangarajan/",
-                                website: "https://rakshitr.co.in"
+                                github: "https://github.com/Rakshit-Rangarajan",
+                                website: "https://rakshitr.co.in",
+                                x: "",
+                                "dev.to": "https://dev.to/whimsical_odyssean",
+                                Bio: "Sleep is Overrated Anyways 😁"
                             },
-                            { name: "Sannith K K", initial: "S", colors: "#f8b500, #4facfe" }
+                            {
+                                name: "Monalisa Das",
+                                role: "Software Architect",
+                                initial: "MD",
+                                colors: "#b026ff, #f8b500",
+                                image: "/monalisa.jpeg",
+                                linkedin: "https://www.linkedin.com/in/dmonalisa",
+                                github: "https://github.com/letusai15/",
+                                website: "https://monalisadas-knowme.vercel.app/",
+                                x: "https://x.com/MLisa1501",
+                                "dev.to": "https://dev.to/letusai15",
+                                Bio: "I Coalesce Creativity!"
+                            },
+                            {
+                                name: "Prakash Patil",
+                                role: "SRE",
+                                initial: "PP",
+                                colors: "#f8b500, #00f260",
+                                image: "/prakash.jpg",
+                                linkedin: "https://www.linkedin.com/in/prkshrj/",
+                                github: "",
+                                website: "",
+                                x: "",
+                                "dev.to": "",
+                                Bio: "\"Engineer by profession, lifelong learner by mindset\" - Exploring the intersection of AI"
+                            },
+                            {
+                                name: "Avinash Shyam",
+                                role: "Lead Developer",
+                                initial: "AS",
+                                colors: "#f8b500, #00f260",
+                                image: "/Avinash.jpeg",
+                                linkedin: "https://www.linkedin.com/in/avinash-shyam-1300ba30/",
+                                github: "",
+                                website: "",
+                                x: "",
+                                "dev.to": "",
+                                Bio: "Lead mobile Dev/Aspiring AI Dev"
+                            },
+                            {
+                                name: "Prathiba",
+                                role: "AI Engineer ",
+                                initial: "P",
+                                colors: "#00f260, #00f2fe",
+                                image: "",
+                                linkedin: "",
+                                github: "",
+                                website: "",
+                                x: "",
+                                "dev.to": "",
+                                Bio: ""
+                            },
+                            {
+                                name: "Purushotham",
+                                role: "",
+                                initial: "P",
+                                colors: "#00f2fe, #b026ff",
+                                image: "",
+                                linkedin: "",
+                                github: "",
+                                website: "",
+                                x: "",
+                                "dev.to": "",
+                                Bio: ""
+                            },
+                            {
+                                name: "Shaik Himan Johny",
+                                role: "Developer",
+                                initial: "P",
+                                colors: "#00f2fe, #b026ff",
+                                image: "/Shaik.jpeg",
+                                linkedin: "https://www.linkedin.com/in/imam-jani-shaik-390954a1",
+                                github: "",
+                                website: "",
+                                x: "",
+                                "dev.to": "",
+                                Bio: ""
+                            }
                         ].map(member => (
                             <div className="team-member group" key={member.name}>
-                                <div 
-                                    className="member-avatar relative overflow-hidden" 
-                                    style={{ '--bg-gradient': `linear-gradient(135deg, ${member.colors})` }}
+                                <div
+                                    className="member-avatar relative overflow-hidden"
+                                    style={{ '--bg-gradient': `linear-gradient(135deg, ${member.colors || '#000, #000'})` }}
                                 >
                                     {member.image ? (
                                         <img src={member.image} alt={member.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                                     ) : (
                                         member.initial
                                     )}
-                                    {member.github && (
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                                            <a href={member.github} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Github size={18} /></a>
-                                            <a href={member.linkedin} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Linkedin size={18} /></a>
-                                            <a href={member.website} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Globe size={18} /></a>
+                                    {(member.github || member.linkedin || member.website || member.x || member["dev.to"]) && (
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap items-center justify-center gap-3 p-2">
+                                            {member.github && <a href={member.github} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Github size={18} /></a>}
+                                            {member.linkedin && <a href={member.linkedin} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Linkedin size={18} /></a>}
+                                            {member.website && <a href={member.website} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Globe size={18} /></a>}
+                                            {member.x && <a href={member.x} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Twitter size={18} /></a>}
+                                            {member["dev.to"] && <a href={member["dev.to"]} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 transition-colors"><Code size={18} /></a>}
                                         </div>
                                     )}
                                 </div>
                                 <h4>{member.name}</h4>
+                                {member.role && <p className="text-xs text-blue-400 font-bold uppercase tracking-widest mt-1">{member.role}</p>}
+                                {member.Bio && <p className="text-xs text-slate-400 mt-2 px-2 text-center leading-relaxed">{member.Bio}</p>}
                             </div>
                         ))}
 
