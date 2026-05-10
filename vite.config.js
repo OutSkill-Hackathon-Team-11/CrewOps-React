@@ -3,4 +3,15 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    allowedHosts: [
+      'oxidant-sprain-frill.ngrok-free.dev'
+    ],
+    proxy: {
+      '/analyze': 'http://127.0.0.1:8000',
+      '/health': 'http://127.0.0.1:8000',
+      '/tuning': 'http://127.0.0.1:8000',
+      '/models': 'http://127.0.0.1:8000'
+    }
+  }
 });
