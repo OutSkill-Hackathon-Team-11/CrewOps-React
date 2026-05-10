@@ -193,6 +193,7 @@ export const useStore = create((set, get) => ({
   agents: AGENTS.map((a) => ({ ...a, status: 'pending' })),
   currentAgentIndex: -1,
   pipelineStartTime: 0,
+  analysisResult: null,
 
   // Input
   activeTab: 'sample',
@@ -265,6 +266,7 @@ export const useStore = create((set, get) => ({
       agents,
       currentAgentIndex: -1,
       pipelineStartTime: Date.now(),
+      analysisResult: null,
       selectedSample: null,
     });
 
@@ -363,6 +365,7 @@ export const useStore = create((set, get) => ({
       agents: AGENTS.map((a) => ({ ...a, status: 'pending', time: 0 })),
       currentAgentIndex: -1,
       pipelineStartTime: 0,
+      analysisResult: null,
     });
   },
 }));

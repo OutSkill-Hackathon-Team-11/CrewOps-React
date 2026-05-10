@@ -1,6 +1,9 @@
 import { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
-import { Upload, FileText, Terminal, Brain, ArrowRight, Activity } from 'lucide-react';
+import {
+  Upload, FileText, Terminal, Brain, ArrowRight, Activity, AlertTriangle,
+  Bell, BookOpen, CheckCircle2, Database, Gauge, Ticket, Wrench
+} from 'lucide-react';
 
 import { useStore } from '../store';
 import { sampleLogs, severityColors } from '../data/mockData';
@@ -38,11 +41,217 @@ const normalizeWebSocketUrl = (value) => {
   return url.toString();
 };
 
+const severityStyles = {
+  P1: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+  P2: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+  P3: 'border-blue-500/30 bg-blue-500/10 text-blue-300',
+  P4: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+};
+
+const ResultCard = ({ icon: Icon, title, children, className = '' }) => (
+  <section className={`glass rounded-2xl border border-white/[0.08] overflow-hidden ${className}`}>
+    <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.06]">
+      <Icon size={16} className="text-blue-400" />
+      <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest">{title}</h3>
+    </div>
+    <div className="p-5">{children}</div>
+  </section>
+);
+
+const MarkdownText = ({ text }) => {
+  if (!text) {
+    return <p className="text-sm text-slate-500">No details returned.</p>;
+  }
+
+  return (
+    <div className="space-y-2 text-sm leading-6 text-slate-300">
+      {text.split('\n').map((line, index) => {
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+          return <div key={index} className="h-2" />;
+        }
+
+        if (trimmed.startsWith('### ')) {
+          return <h4 key={index} className="pt-3 text-base font-bold text-white">{trimmed.replace(/^###\s+/, '')}</h4>;
+        }
+
+        if (trimmed.startsWith('#### ')) {
+          return <h5 key={index} className="pt-2 text-sm font-semibold text-blue-300">{trimmed.replace(/^####\s+/, '')}</h5>;
+        }
+
+        if (trimmed.startsWith('- [ ]')) {
+          return (
+            <div key={index} className="flex gap-2 text-slate-300">
+              <span className="mt-2 h-3 w-3 shrink-0 rounded border border-slate-600" />
+              <span>{trimmed.replace(/^- \[ \]\s*/, '')}</span>
+            </div>
+          );
+        }
+
+        if (trimmed.startsWith('- ') || /^\d+\.\s/.test(trimmed)) {
+          return (
+            <div key={index} className="flex gap-2 text-slate-300">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400/70" />
+              <span>{trimmed.replace(/^-\s*/, '')}</span>
+            </div>
+          );
+        }
+
+        if (trimmed.startsWith('```')) {
+          return null;
+        }
+
+        return <p key={index}>{trimmed.replace(/\*\*/g, '')}</p>;
+      })}
+    </div>
+  );
+};
+
+const ApiResultReport = ({ result }) => {
+  const severity = result.severity || 'Unknown';
+  const pipelineEntries = Object.entries(result.pipeline_status || {});
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="glass rounded-xl border border-white/[0.08] p-4">
+          <span className="text-[10px] text-slate-500 uppercase tracking-widest">Severity</span>
+          <div className={`mt-2 inline-flex px-3 py-1 rounded-full border text-sm font-bold ${severityStyles[severity] || 'border-slate-500/30 bg-slate-500/10 text-slate-300'}`}>
+            {severity}
+          </div>
+        </div>
+        <div className="glass rounded-xl border border-white/[0.08] p-4">
+          <span className="text-[10px] text-slate-500 uppercase tracking-widest">Log Type</span>
+          <p className="mt-2 text-sm font-semibold text-white capitalize">{result.log_type || 'Unknown'}</p>
+        </div>
+        <div className="glass rounded-xl border border-white/[0.08] p-4">
+          <span className="text-[10px] text-slate-500 uppercase tracking-widest">JIRA</span>
+          <p className="mt-2 text-sm font-semibold text-white">{result.jira_tickets?.length || 0} ticket{result.jira_tickets?.length === 1 ? '' : 's'}</p>
+        </div>
+        <div className="glass rounded-xl border border-white/[0.08] p-4">
+          <span className="text-[10px] text-slate-500 uppercase tracking-widest">Notifications</span>
+          <p className="mt-2 text-sm font-semibold text-white">{result.notifications_sent?.length || 0} sent</p>
+        </div>
+      </div>
+
+      <ResultCard icon={Brain} title="Incident Summary">
+        <MarkdownText text={result.log_summary} />
+      </ResultCard>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ResultCard icon={AlertTriangle} title="Critical Issues">
+          <div className="space-y-3">
+            {(result.critical_issues || []).map((issue, index) => (
+              <div key={`${issue.title}-${index}`} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-widest">Issue {index + 1}</span>
+                  <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${severityStyles[issue.severity] || severityStyles.P2}`}>
+                    {issue.severity}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-200 leading-6">{issue.title}</p>
+              </div>
+            ))}
+            {(!result.critical_issues || result.critical_issues.length === 0) && (
+              <p className="text-sm text-slate-500">No critical issues returned.</p>
+            )}
+          </div>
+        </ResultCard>
+
+        <ResultCard icon={Gauge} title="Pipeline Status">
+          <div className="space-y-2">
+            {pipelineEntries.map(([agent, value]) => (
+              <div key={agent} className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-emerald-400" />
+                  <span className="text-sm text-slate-300 capitalize">{agent.replace(/_/g, ' ')}</span>
+                </div>
+                <span className="text-xs font-mono text-slate-500">{value.elapsed_s ?? '-'}s</span>
+              </div>
+            ))}
+          </div>
+        </ResultCard>
+      </div>
+
+      <ResultCard icon={Wrench} title="Root Cause">
+        <MarkdownText text={result.root_cause_analysis} />
+      </ResultCard>
+
+      <ResultCard icon={Wrench} title="Remediation Plan">
+        <MarkdownText text={result.remediation_plan} />
+      </ResultCard>
+
+      <ResultCard icon={BookOpen} title="Runbook">
+        <MarkdownText text={result.cookbook} />
+      </ResultCard>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ResultCard icon={Ticket} title="JIRA Tickets">
+          <div className="space-y-3">
+            {(result.jira_tickets || []).map((ticket) => (
+              <a
+                key={ticket.key}
+                href={ticket.url}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 hover:border-blue-500/30 hover:bg-blue-500/[0.04] transition-all"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-bold text-blue-300">{ticket.key}</span>
+                  <span className="text-[10px] uppercase tracking-widest text-emerald-300">{ticket.mode || ticket.status}</span>
+                </div>
+                <p className="mt-2 text-sm text-slate-300">{ticket.summary}</p>
+                <p className="mt-2 text-xs text-slate-500">{ticket.epic} · {ticket.sprint}</p>
+              </a>
+            ))}
+            {(!result.jira_tickets || result.jira_tickets.length === 0) && (
+              <p className="text-sm text-slate-500">No JIRA tickets returned.</p>
+            )}
+          </div>
+        </ResultCard>
+
+        <ResultCard icon={Bell} title="Notifications">
+          <div className="space-y-3">
+            {(result.notifications_sent || []).map((notification, index) => (
+              <div key={`${notification.channel}-${index}`} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-slate-200">{notification.channel}</span>
+                  <span className="text-xs text-emerald-300">{notification.status}</span>
+                </div>
+                {notification.http_status && (
+                  <p className="mt-2 text-xs text-slate-500">HTTP {notification.http_status}</p>
+                )}
+              </div>
+            ))}
+            {(!result.notifications_sent || result.notifications_sent.length === 0) && (
+              <p className="text-sm text-slate-500">No notifications returned.</p>
+            )}
+          </div>
+        </ResultCard>
+      </div>
+
+      <ResultCard icon={Database} title="RAG Context">
+        <div className="space-y-3">
+          {(result.rag_context || []).map((context, index) => (
+            <div key={index} className="rounded-xl border border-white/[0.08] bg-black/20 p-4 text-xs leading-5 text-slate-400 whitespace-pre-wrap">
+              {context}
+            </div>
+          ))}
+          {(!result.rag_context || result.rag_context.length === 0) && (
+            <p className="text-sm text-slate-500">No RAG context returned.</p>
+          )}
+        </div>
+      </ResultCard>
+    </div>
+  );
+};
+
 export default function Home() {
   const { 
     activeTab, setActiveTab, selectedSample, setSelectedSample, 
     logContent, setLogContent, startPipeline, pipelineStatus,
-    liveLogs, addLiveLog, clearLiveLogs
+    liveLogs, addLiveLog, clearLiveLogs, analysisResult
   } = useStore();
 
   const heroRef = useRef(null);
@@ -352,11 +561,14 @@ export default function Home() {
 
       {/* Bottom CTA when done */}
       {pipelineStatus === 'completed' && (
-        <div className="text-center animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl glass border-emerald-500/20">
+        <div className="animate-fade-in space-y-4">
+          <div className="mx-auto w-fit flex items-center gap-2 px-6 py-3 rounded-2xl glass border-emerald-500/20">
             <Brain size={18} className="text-emerald-400" />
             <span className="text-sm text-slate-300">Pipeline complete — all agents have processed the incident</span>
           </div>
+          {analysisResult && (
+            <ApiResultReport result={analysisResult} />
+          )}
         </div>
       )}
     </div>
