@@ -7,7 +7,7 @@ from typing import Optional
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -265,3 +265,137 @@ async def analyze_logs(payload: AnalyzeRequest):
             status_code=500,
             detail=str(e),
         )
+
+
+ERROR_KEYWORDS = [
+
+    # Generic
+    "error",
+    "exception",
+    "fatal",
+    "critical",
+    "panic",
+    "traceback",
+
+    # HTTP
+    "500",
+    "502",
+    "503",
+    "504",
+
+    # Kubernetes
+    "crashloopbackoff",
+    "oomkilled",
+    "failed",
+    "evicted",
+
+    # Database
+    "deadlock",
+    "connection refused",
+    "too many connections",
+
+    # Infra
+    "timeout",
+    "unreachable",
+    "segmentation fault",
+]
+
+
+def is_error_log(log_text: str) -> bool:
+
+    if not log_text:
+        return False
+
+    text = log_text.lower()
+
+    return any(
+        keyword in text
+        for keyword in ERROR_KEYWORDS
+    )
+
+
+@app.post("/webhook/logs")
+async def webhook_logs(request: Request):
+
+    global GRAPH
+
+    try:
+        payload = await request.json()
+
+    except Exception:
+        payload = {
+            "raw_logs": (await request.body()).decode()
+        }
+
+    raw_logs = (
+        payload.get("raw_logs")
+        or payload.get("logs")
+        or payload.get("message")
+        or ""
+    )
+
+    # =====================================================
+    # FILTER
+    # =====================================================
+
+    if not is_error_log(raw_logs):
+
+        return {
+            "success": True,
+            "pipeline_triggered": False,
+            "message": "No error detected. Pipeline skipped.",
+        }
+
+    print("🚨 Error detected — running CrewOps pipeline")
+
+    # =====================================================
+    # INITIAL STATE
+    # =====================================================
+
+    initial_state = {
+        "raw_logs": raw_logs,
+
+        "metadata": {
+            "source": "webhook",
+        },
+
+        "log_summary": "",
+        "log_type": "",
+
+        "severity": "",
+        "severity_rationale": "",
+
+        "approval_required": False,
+        "approval_status": "pending",
+
+        "critical_issues": [],
+
+        "rag_context": [],
+        "root_cause_analysis": "",
+
+        "remediation_plan": "",
+
+        "cookbook": "",
+
+        "jira_tickets": [],
+        "notifications_sent": [],
+
+        "pipeline_status": {},
+
+        "errors": [],
+    }
+
+    # =====================================================
+    # RUN PIPELINE
+    # =====================================================
+
+    result = await asyncio.to_thread(
+        GRAPH.invoke,
+        initial_state,
+    )
+
+    return {
+        "success": True,
+        "pipeline_triggered": True,
+        "result": result
+    }
