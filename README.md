@@ -461,5 +461,11 @@ The template uses an HTTP Request node to POST directly to the Slack Incoming We
 ## 📜 License
 
 ---
+
+## The Crew ❤️
 The Crew: Sannith Kumar, Rakshit Rangarajan, Monalisa Das, Shaik Himan Johny, Charchit Bansal, Prakash Patil, Purushotham Boddu,Prathiba Katakol, Avinash Shyam.
+
+<a href="https://github.com/OutSkill-Hackathon-Team-11/CrewOps-React/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=OutSkill-Hackathon-Team-11/CrewOps-React" />
+</a>
 <br>*Built for the AI Post-Training Hackathon | CrewOps Team*
