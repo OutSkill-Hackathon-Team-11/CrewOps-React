@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
+import { Terminal, Monitor, Cpu, Shield, Globe, Layers, Zap, CheckCircle, ChevronRight, Copy, Apple } from "lucide-react";
 import "./LandingPage.css";
 
 export default function LandingPage() {
@@ -65,7 +66,6 @@ export default function LandingPage() {
                 if (id === sourceId || id === targetId) {
                     node.style.borderColor = color;
                     node.style.boxShadow = `0 10px 30px rgba(${hexToRgb(color)}, 0.5)`;
-                    node.style.transform = 'scale(1.1)';
                 } else {
                     node.style.opacity = '0.3';
                 }
@@ -79,7 +79,6 @@ export default function LandingPage() {
                 node.style.borderColor = `rgba(${hexToRgb(nodeData.color)}, 0.3)`;
                 node.style.boxShadow = `0 4px 20px rgba(${hexToRgb(nodeData.color)}, 0.1)`;
                 node.style.opacity = '1';
-                node.style.transform = 'scale(1)';
             });
         }
 
@@ -121,6 +120,7 @@ export default function LandingPage() {
         }
 
         function renderNodes() {
+            if (!nodesGroup) return;
             nodes = getNodes();
             nodesGroup.innerHTML = '';
             nodes.forEach(node => {
@@ -149,6 +149,7 @@ export default function LandingPage() {
         }
 
         function renderLinks() {
+            if (!svgGroup || !container) return;
             svgGroup.innerHTML = '';
             const rect = container.getBoundingClientRect();
             links.forEach((link, idx) => {
@@ -198,40 +199,6 @@ export default function LandingPage() {
                 svgGroup.appendChild(baseNode);
                 svgGroup.appendChild(lightNode);
             });
-        }
-
-        const terminalLines = [
-            { time: "17:10:01", entity: "system", class: "orchestrator", text: "Initializing CrewOps Multi-Agent Analytics..." },
-            { time: "17:10:02", entity: "observability", class: "warning", text: "[LangSmith] Project 'crewops-prod' connected." },
-            { time: "17:10:03", entity: "log-agent", class: "agent", text: "[Log Analyzer] Scanning production logs..." },
-            { time: "17:10:04", entity: "observability", class: "success", text: "[LangSmith] Trace 'log-analysis-sq-1' started." },
-            { time: "17:10:05", entity: "log-agent", class: "error", text: "CRITICAL: Memory pressure on node k8s-worker-3." },
-            { time: "17:10:06", entity: "jira", class: "success", text: "JIRA Ticket OPS-892 created (Severity: CRITICAL)." },
-            { time: "17:10:07", entity: "n8n-flow", class: "orchestrator", text: "[n8n] Workflow triggered: Slack Alert dispatched." },
-            { time: "17:10:08", entity: "remediation", class: "agent", text: "[Remediation] Generating fix: HPA scaling update." },
-            { time: "17:10:09", entity: "runbook-gen", class: "agent", text: "[Runbook] Synthesizing SRE cookbook #442..." },
-            { time: "17:10:10", entity: "observability", class: "success", text: "[LangSmith] Trace complete. Latency: 1.2s." },
-            { time: "17:10:11", entity: "system", class: "orchestrator", text: "System stabilized. Monitoring next cycle..." }
-        ];
-
-        const terminalBody = document.getElementById('typing-terminal');
-        let currentLineIndex = 0;
-        let typeTimeout;
-        const MAX_TERMINAL_LINES = 12;
-
-        function typeLine() {
-            if (!terminalBody) return;
-            const line = terminalLines[currentLineIndex % terminalLines.length];
-            const lineEl = document.createElement('div');
-            lineEl.className = 'terminal-line fade-in-line';
-            const now = new Date();
-            const timeStr = now.toTimeString().split(' ')[0];
-            lineEl.innerHTML = `<span class="time">[${timeStr}]</span> <span class="${line.class}">[${line.entity}]</span> <span class="text">${line.text}</span>`;
-            terminalBody.appendChild(lineEl);
-            if (terminalBody.children.length > MAX_TERMINAL_LINES) terminalBody.removeChild(terminalBody.firstChild);
-            terminalBody.scrollTop = terminalBody.scrollHeight;
-            currentLineIndex++;
-            typeTimeout = setTimeout(typeLine, 1000);
         }
 
         const tabBtns = document.querySelectorAll('.tab-btn');
@@ -318,12 +285,10 @@ export default function LandingPage() {
         window.addEventListener('resize', handleResize);
         renderNodes();
         linkTimeout = setTimeout(renderLinks, 50);
-        typeLine();
         initCharts();
 
         return () => {
             window.removeEventListener('resize', handleResize);
-            clearTimeout(typeTimeout);
             clearTimeout(resizeTimer);
             clearTimeout(linkTimeout);
             const mttrCanvas = document.getElementById('mttrChart');
@@ -359,36 +324,36 @@ export default function LandingPage() {
                 </div>
                 <nav>
                     <a href="#architecture">Architecture</a>
-                    <a href="#market">Why CrewOps</a>
-                    <a href="#terminal-section">Live Action</a>
+                    <a href="#pipeline">Pipeline</a>
+                    <a href="/Official_Documentation.html" target="_blank" rel="noopener noreferrer">Official Documentation</a>
                     <a href="#team">The Team</a>
                 </nav>
-                <button className="cta-button" onClick={() => navigate("/dashboard")}>View Main Product</button>
+                <button className="cta-button" onClick={() => navigate("/dashboard")}>Launch Dashboard</button>
             </header>
             <main>
                 <section className="hero">
                     <div className="hero-content">
                         <div className="badge">
-                            <span className="badge-dot"></span> 24-Hour Sprint Ready
+                            <span className="badge-dot"></span> AI Post-Training Hackathon
                         </div>
                         <h1>Automating DevOps<br />with <span className="gradient-text">Agentic Intelligence</span></h1>
-                        <p>Detect production failures in real-time. Our Multi-Agent Suite explains root causes, generates SRE cookbooks, and automatically orchestrates fixes via Slack and JIRA.</p>
+                        <p>Modern production systems generate thousands of log lines per minute. <strong>CrewOps</strong> transforms raw log streams into decisive action in under 60 seconds.</p>
                         <div className="hero-buttons">
-                            <button className="primary-btn" onClick={() => navigate("/dashboard")}>View Main Product</button>
-                            <button className="secondary-btn">Read the Whitepaper</button>
+                            <button className="primary-btn" onClick={() => navigate("/dashboard")}>Launch Dashboard</button>
+                            <a href="/Official_Documentation.html" target="_blank" rel="noopener noreferrer" className="secondary-btn">Official Documentation</a>
                         </div>
                         <div className="stats-container">
                             <div className="stat-item">
-                                <span className="stat-value">8</span>
+                                <span className="stat-value">60s</span>
+                                <span className="stat-label">Analysis Time</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-value">7</span>
                                 <span className="stat-label">AI Agents</span>
                             </div>
                             <div className="stat-item">
-                                <span className="stat-value">4</span>
-                                <span className="stat-label">Squads</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-value">&lt;2s</span>
-                                <span className="stat-label">Response Time</span>
+                                <span className="stat-value">100%</span>
+                                <span className="stat-label">Traceability</span>
                             </div>
                         </div>
                     </div>
@@ -409,16 +374,153 @@ export default function LandingPage() {
                         <div id="nodes-group"></div>
                     </div>
                 </section>
+
+                <section className="pipeline-section" id="pipeline">
+                    <div className="section-title">
+                        <h2>LangGraph <span>Pipeline Architecture</span></h2>
+                        <p>A deterministic state-machine orchestration with parallel execution and conditional routing.</p>
+                    </div>
+                    
+                    <div className="pipeline-flow-container">
+                        <div className="flow-track">
+                            {/* Column 1: Start */}
+                            <div className="flow-column">
+                                <div className="flow-node start">
+                                    <span className="node-tag">ENTRY</span>
+                                    <div className="node-box">
+                                        <div className="node-icon">📥</div>
+                                        <h4>Raw Logs</h4>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flow-connector"></div>
+
+                            {/* Column 2: Triage */}
+                            <div className="flow-column">
+                                <div className="flow-node">
+                                    <div className="node-box">
+                                        <div className="node-icon">🤖</div>
+                                        <h4>Classifier</h4>
+                                    </div>
+                                </div>
+                                <div className="flow-connector vertical"></div>
+                                <div className="flow-node">
+                                    <div className="node-box">
+                                        <div className="node-icon">⚖️</div>
+                                        <h4>Severity</h4>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flow-connector"></div>
+
+                            {/* Column 3: Logic Split */}
+                            <div className="flow-column wide">
+                                <div className="split-wrapper">
+                                    <div className="split-branch top">
+                                        <span className="branch-label">P1 / P2 INCIDENTS</span>
+                                        <div className="flow-node-row">
+                                            <div className="flow-node highlight">
+                                                <div className="node-box">
+                                                    <div className="node-icon">🔍</div>
+                                                    <h4>RCA Agent</h4>
+                                                </div>
+                                            </div>
+                                            <div className="flow-connector"></div>
+                                            <div className="flow-node highlight">
+                                                <div className="node-box">
+                                                    <div className="node-icon">🛠️</div>
+                                                    <h4>Planner</h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="split-branch bottom">
+                                        <span className="branch-label">P3 / P4 INCIDENTS</span>
+                                        <div className="flow-node">
+                                            <div className="node-box">
+                                                <div className="node-icon">📚</div>
+                                                <h4>Cookbook</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flow-connector"></div>
+
+                            {/* Column 4: Output */}
+                            <div className="flow-column">
+                                <div className="flow-node-group">
+                                    <span className="group-label">PARALLEL OPS</span>
+                                    <div className="flow-node">
+                                        <div className="node-box accent-blue">
+                                            <div className="node-icon">🎫</div>
+                                            <h4>JIRA Agent</h4>
+                                        </div>
+                                    </div>
+                                    <div className="flow-node">
+                                        <div className="node-box accent-purple">
+                                            <div className="node-icon">🔔</div>
+                                            <h4>Notification</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="strategy-section" id="strategy">
+                    <div className="section-title">
+                        <h2>3-Tier <span>Agentic Strategy</span></h2>
+                        <p>High-fidelity reasoning powered by specialized models.</p>
+                    </div>
+                    <div className="strategy-grid">
+                        <div className="strategy-item tier-fast">
+                            <div className="tier-badge">Tier 1: Fast</div>
+                            <h4>LLM Fast</h4>
+                            <p className="model-name">gpt-4o-mini (Temp: 0.1)</p>
+                            <ul className="tier-list">
+                                <li>Incident Classification</li>
+                                <li>Severity Assessment</li>
+                                <li>Fast Triage</li>
+                            </ul>
+                        </div>
+                        <div className="strategy-item tier-reasoning">
+                            <div className="tier-badge">Tier 2: Reasoning</div>
+                            <h4>LLM Reasoning</h4>
+                            <p className="model-name">gpt-4o (Temp: 0.2)</p>
+                            <ul className="tier-list">
+                                <li>RAG-Grounded RCA</li>
+                                <li>Remediation Planning</li>
+                                <li>Knowledge Synthesis</li>
+                            </ul>
+                        </div>
+                        <div className="strategy-item tier-gen">
+                            <div className="tier-badge">Tier 3: Generation</div>
+                            <h4>LLM Generation</h4>
+                            <p className="model-name">gpt-4o-mini (Temp: 0.3)</p>
+                            <ul className="tier-list">
+                                <li>Runbook Synthesis</li>
+                                <li>SOP Documentation</li>
+                                <li>Stakeholder Updates</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
                 <section className="blueprint-section" id="blueprint">
                     <div className="section-title">
                         <h2>Technical <span>Blueprint</span></h2>
-                        <p>A deep dive into the orchestration, data models, and agent workflows.</p>
+                        <p>Orchestration, data models, and agent workflows.</p>
                     </div>
                     <div className="blueprint-tabs-container">
                         <div className="blueprint-tabs">
                             <button className="tab-btn active" data-tab="performance">Performance</button>
                             <button className="tab-btn" data-tab="flow">Workflows</button>
-                            <button className="tab-btn" data-tab="agents">Agent Logic</button>
+                            <button className="tab-btn" data-tab="agents">Agent Roster</button>
                             <button className="tab-btn" data-tab="swot">SWOT Analysis</button>
                         </div>
                         <div className="tab-content-container">
@@ -437,56 +539,49 @@ export default function LandingPage() {
                             <div className="tab-content" id="flow">
                                 <div className="diagram-grid">
                                     <div className="diagram-item blueprint-card">
-                                        <h3>Use Case Architecture</h3>
+                                        <h3>StateGraph Orchestration</h3>
                                         <div className="blueprint-flow vertical">
-                                            <div className="bp-node actor">SRE Engineer</div>
+                                            <div className="bp-node">Classifier</div>
                                             <div className="bp-arrow">↓</div>
-                                            <div className="bp-node process">Log Analysis</div>
+                                            <div className="bp-node">Severity</div>
                                             <div className="bp-arrow">↓</div>
                                             <div className="bp-split">
-                                                <div className="bp-node ticket">JIRA Ops</div>
-                                                <div className="bp-node alert">Slack Alert</div>
+                                                <div className="bp-node highlight">RCA (P1/P2)</div>
+                                                <div className="bp-node">Cookbook (P3/P4)</div>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="diagram-item blueprint-card">
-                                        <h3>Incident Process Flow</h3>
+                                        <h3>Parallel Fan-out</h3>
                                         <div className="blueprint-flow">
-                                            <div className="bp-step">Ingestion</div>
+                                            <div className="bp-step">Cookbook</div>
                                             <div className="bp-arrow">→</div>
-                                            <div className="bp-step highlight">Analysis</div>
-                                            <div className="bp-arrow">→</div>
-                                            <div className="bp-step">Ticket</div>
-                                            <div className="bp-arrow">→</div>
-                                            <div className="bp-step">Orchestration</div>
+                                            <div className="bp-split">
+                                                <div className="bp-step">JIRA</div>
+                                                <div className="bp-step">Slack</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="tab-content" id="agents">
-                                <div className="diagram-grid">
-                                    <div className="diagram-item blueprint-card">
-                                        <h3>Sequence Logic</h3>
-                                        <div className="sequence-box">
-                                            <div className="seq-line"><span>1. Log Push</span></div>
-                                            <div className="seq-line"><span>2. AI Analysis</span></div>
-                                            <div className="seq-line"><span>3. JIRA Ticket</span></div>
-                                            <div className="seq-line"><span>4. n8n Slack Trigger</span></div>
+                                <div className="agent-roster-grid">
+                                    {[
+                                        { id: 1, name: "Classifier", node: "classifier", role: "Categorise log type; structured summary" },
+                                        { id: 2, name: "Severity Assessor", node: "severity", role: "Assign P1–P4 triage; set approval status" },
+                                        { id: 3, name: "Root Cause Analyst", node: "root_cause", role: "RAG-grounded RCA from LanceDB" },
+                                        { id: 4, name: "Remediation Planner", node: "remediation", role: "Step-by-step remediation planning" },
+                                        { id: 5, name: "Cookbook Synthesizer", node: "cookbook", role: "Operational runbook / SOP generation" },
+                                        { id: 6, name: "JIRA Agent", node: "jira", role: "Creates ADF-formatted JIRA tickets" },
+                                        { id: 7, name: "Notification Agent", node: "notification", role: "Slack Block Kit alert via n8n" }
+                                    ].map(agent => (
+                                        <div className="agent-roster-card" key={agent.id}>
+                                            <div className="agent-id">#{agent.id}</div>
+                                            <h4>{agent.name}</h4>
+                                            <code className="node-name">node: {agent.node}</code>
+                                            <p>{agent.role}</p>
                                         </div>
-                                    </div>
-                                    <div className="diagram-item blueprint-card">
-                                        <h3>Squad Swimlanes</h3>
-                                        <div className="swimlane-box">
-                                            <div className="lane">
-                                                <h5>Log Squad</h5>
-                                                <div className="lane-node">Analyzer</div>
-                                            </div>
-                                            <div className="lane">
-                                                <h5>Action Squad</h5>
-                                                <div className="lane-node highlight">Remediation</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
                             <div className="tab-content" id="swot">
@@ -496,24 +591,28 @@ export default function LandingPage() {
                                         <ul>
                                             <li>Multi-agent parallel processing</li>
                                             <li>Real-time n8n orchestration</li>
+                                            <li>LangSmith full traceability</li>
                                         </ul>
                                     </div>
                                     <div className="swot-card weakness">
                                         <h4>Weaknesses</h4>
                                         <ul>
-                                            <li>High initial LLM token cost</li>
+                                            <li>Initial indexing latency (RAG)</li>
+                                            <li>Higher token cost for deep reasoning</li>
                                         </ul>
                                     </div>
                                     <div className="swot-card opportunity">
                                         <h4>Opportunities</h4>
                                         <ul>
-                                            <li>Automated infrastructure self-healing</li>
+                                            <li>Infrastructure self-healing</li>
+                                            <li>Historical incident correlation</li>
                                         </ul>
                                     </div>
                                     <div className="swot-card threat">
                                         <h4>Threats</h4>
                                         <ul>
                                             <li>LLM hallucination risks</li>
+                                            <li>Dynamic system drift</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -521,54 +620,22 @@ export default function LandingPage() {
                         </div>
                     </div>
                 </section>
-                <section className="market-section" id="market">
+
+                <section className="tech-stack-section">
                     <div className="section-title">
-                        <h2>Empowering Teams, <span>Not Replacing Jobs</span></h2>
-                        <p>Autonomous squads orchestrated via <strong>n8n</strong> for intelligent incident response.</p>
+                        <h2>Modern <span>Technology Stack</span></h2>
+                        <p>Built for the AI Post-Training Hackathon.</p>
                     </div>
-                    <div className="market-content">
-                        <div className="market-text">
-                            <h3>The Noise Problem</h3>
-                            <p>In a rapidly evolving tech landscape, true DevOps efficiency isn't about replacing engineers—it's about removing the noise. Incident response is currently plagued by "alert fatigue" and repetitive log parsing, which leads to burnout and slow resolution times.</p>
-                            <br />
-                            <h3>The CrewOps Solution</h3>
-                            <p>Our multi-agent architecture acts as a highly-skilled SRE team. It digests complex logs in parallel, generates remediation playbooks, and orchestrates response via <strong>n8n</strong>, Slack, and JIRA.</p>
-                            <ul className="market-list">
-                                <li><span className="check">🔍</span> <strong>Log Analyzer Agent:</strong> Automatically parses gigabytes of logs to find root causes and timeline of events.</li>
-                                <li><span className="check">🔧</span> <strong>Remediation Agent:</strong> Suggests immediate fixes, shell commands, and kubectl procedures to stabilize systems.</li>
-                                <li><span className="check">📖</span> <strong>Runbook Generator:</strong> Synthesizes complete, operational SRE cookbooks for every detected incident.</li>
-                                <li><span className="check">📊</span> <strong>LangSmith Tracing:</strong> Full observability suite for tracking agent performance, latency, and cost in real-time.</li>
-                                <li><span className="check">🔄</span> <strong>n8n Orchestration:</strong> Intelligently routes alerts. Critical issues hit Slack <strong>instantly</strong>, while Low/Medium issues are queued for tomorrow's review.</li>
-                            </ul>
-                        </div>
-                        <div className="market-visual">
-                            <div className="stat-card">
-                                <div className="stat-circle">
-                                    <span>85%</span>
-                                </div>
-                                <h4>Reduction in MTTR</h4>
-                                <p>Mean Time To Resolution drops significantly when humans don't have to search through gigabytes of logs manually.</p>
-                            </div>
-                        </div>
+                    <div className="tech-grid">
+                        <div className="tech-card"><h4>LangGraph</h4><p>Agent Orchestration</p></div>
+                        <div className="tech-card"><h4>LanceDB</h4><p>Vector Store</p></div>
+                        <div className="tech-card"><h4>LlamaIndex</h4><p>RAG Framework</p></div>
+                        <div className="tech-card"><h4>LangSmith</h4><p>Observability</p></div>
+                        <div className="tech-card"><h4>OpenRouter</h4><p>LLM Gateway</p></div>
+                        <div className="tech-card"><h4>n8n</h4><p>Automation</p></div>
                     </div>
                 </section>
-                <section className="terminal-section" id="terminal-section">
-                    <div className="section-title">
-                        <h2>Watch the Agents <span>In Action</span></h2>
-                        <p>Real-time collaboration across our 4 agent squads.</p>
-                    </div>
-                    <div className="terminal-window">
-                        <div className="terminal-header">
-                            <div className="terminal-buttons">
-                                <span className="btn close"></span>
-                                <span className="btn minimize"></span>
-                                <span className="btn maximize"></span>
-                            </div>
-                            <div className="terminal-title">crewops-agent-runner ~ bash</div>
-                        </div>
-                        <div className="terminal-body" id="typing-terminal"></div>
-                    </div>
-                </section>
+
                 <section className="team-section" id="team">
                     <div className="section-title">
                         <h2>Meet the <span>Crew</span></h2>
@@ -593,6 +660,9 @@ export default function LandingPage() {
                     </div>
                 </section>
             </main>
+            <footer className="landing-footer">
+                <p>&copy; 2026 CrewOps. Built for the AI Post-Training Hackathon.</p>
+            </footer>
         </div>
     );
 }

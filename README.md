@@ -28,7 +28,7 @@ Raw Logs (text or file)
 │                                                                   │
 │   START ──► [Classifier] ──► [Severity Assessor]                  │
 │                                      │                            │
-│                        ┌─────────────┴──────────────┐            │
+│                        ┌─────────────┴──────────────┐             │
 │                    P1/P2 (full_pipeline)         P3/P4 (summary)  │
 │                        ▼                            ▼             │
 │              [Root Cause Analyst]            [Cookbook Agent]     │
@@ -40,7 +40,7 @@ Raw Logs (text or file)
 │              [Cookbook Synthesizer]                               │
 │              (gpt-4o-mini)                                        │
 │                        │                                          │
-│              ┌─────────┴─────────┐  ← parallel fan-out           │
+│              ┌─────────┴─────────┐  ← parallel fan-out            │
 │              ▼                   ▼                                │
 │        [JIRA Agent]    [Notification Agent]                       │
 │              │                   │                                │
@@ -107,6 +107,37 @@ flowchart TD
 | 5 | **Cookbook Synthesizer** | `cookbook` | `gpt-4o-mini` (generation) | Operational runbook / SOP from full incident context |
 | 6 | **JIRA Agent** | `jira` | — | Creates ADF-formatted JIRA ticket (mock or live) |
 | 7 | **Notification Agent** | `notification` | — | Posts Slack Block Kit alert via n8n Incoming Webhook |
+
+---
+
+## 🎨 User Interface & Operational Console
+
+CrewOps features a high-fidelity, futuristic React-based dashboard designed for high-stakes DevOps environments. For a full visual breakdown, refer to the [Official Technical Report](./CrewOps_Official_Report.html).
+
+### 1. Main Dashboard (`/dashboard`)
+*The Command Center for Incident Ingestion*
+- **Multi-Format Ingestion:** Support for raw text, file uploads (log, txt, json), and real-time stream simulation.
+- **Agentic Progression Feed:** A real-time visualization of the 7-agent pipeline. Watch as the **Classifier** identifies the failure, the **Severity Assessor** triages the risk, and the **Analyst** retrieves RAG context.
+- **Structured Intelligence Cards:** Results are presented in an executive-ready format, detailing the Incident Summary, Root Cause Analysis, and a step-by-step Remediation Plan.
+
+### 2. Analytics Hub (`/dashboard/analytics`)
+*Data-Driven Insights for SRE Managers*
+- **Performance Benchmarking:** Real-time MTTR (Mean Time To Resolution) charts comparing CrewOps autonomous response times against industry-standard manual benchmarks.
+- **Operational Health:** Visual tracking of agent accuracy, cost-per-incident (token usage), and severity distribution across your infrastructure.
+- **Trend Analysis:** Identify recurring failure patterns and hot-spots in your k8s or cloudwatch logs.
+
+### 3. RAG Tuning Studio (`/dashboard/rag`)
+*The Developer's Control Plane*
+- **Vector Index Management:** Direct visibility into the **LanceDB** vector store. Manage knowledge chunks, update documentation, and re-index the knowledge base in real-time.
+- **Embedding Sandbox:** Test the retrieval grounding by querying the vector index with natural language. Verify that the **Analyst** has access to the correct troubleshooting playbooks.
+- **Model Orchestration:** Configure temperature settings and model selection (e.g., gpt-4o vs Claude) for individual agents in the pipeline.
+
+---
+
+## 📄 Official Documentation
+
+For a comprehensive technical whitepaper, system architecture diagrams, and executive-level overview, please view the:
+**[CrewOps Official Technical Report](./CrewOps_Official_Report.html)**
 
 ---
 
