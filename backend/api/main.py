@@ -128,8 +128,8 @@ class AnalyzeRequest(BaseModel):
     reasoning_max_tokens: int = 4000
     generation_max_tokens: int = 6000
 
-    jira_mock: bool = True
-    notif_mock: bool = True
+    jira_mock: bool = False
+    notif_mock: bool = False
 
     source: Optional[str] = "api"
     
