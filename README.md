@@ -461,5 +461,5 @@ The template uses an HTTP Request node to POST directly to the Slack Incoming We
 ## 📜 License
 
 ---
-The Crew: Sannith Kumar, Rakshit Rangarajan, Monalisa Das, Shaik Himan Johny, Charchit Bansal, Prakash Patil, Purushotham Boddu,Prathiba Katakol
+The Crew: Sannith Kumar, Rakshit Rangarajan, Monalisa Das, Shaik Himan Johny, Charchit Bansal, Prakash Patil, Purushotham Boddu,Prathiba Katakol, Avinash Shyam.
 <br>*Built for the AI Post-Training Hackathon | CrewOps Team*
