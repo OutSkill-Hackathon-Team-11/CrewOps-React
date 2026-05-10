@@ -136,22 +136,68 @@ export const useStore = create((set, get) => ({
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if (response.ok && data.success) {
-        set((s) => ({
-          pipelineStatus: 'completed',
-          currentAgentIndex: -1,
-          agents: s.agents.map(a => ({ ...a, status: 'done', time: simulateAgentTime() })),
-          analysisResult: data.result,
-        }));
-      } else {
-        console.error("API Error:", data);
-        set({ pipelineStatus: 'idle' });
-        alert("API Error: " + (data.detail || JSON.stringify(data)));
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const nodeMap = {
+        'classifier': 'classifier',
+        'severity': 'severity',
+        'root_cause': 'rootCause',
+        'remediation': 'remediation',
+        'cookbook': 'runbook',
+        'jira': 'jira',
+        'notification': 'alerts'
+      };
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop(); // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            if (dataStr === '[DONE]') {
+              set({ pipelineStatus: 'completed' });
+              continue;
+            }
+
+            try {
+              const eventData = JSON.parse(dataStr);
+              // LangGraph update is { [node_name]: state_values }
+              const nodeName = Object.keys(eventData)[0];
+              const agentId = nodeMap[nodeName];
+
+              if (agentId) {
+                set((s) => ({
+                  agents: s.agents.map(a => 
+                    a.id === agentId 
+                      ? { ...a, status: 'done', time: simulateAgentTime() } 
+                      : a
+                  ),
+                  // Update analysis results incrementally
+                  analysisResult: {
+                    ...s.analysisResult,
+                    ...eventData[nodeName]
+                  }
+                }));
+              }
+            } catch (e) {
+              console.error("Error parsing stream chunk:", e);
+            }
+          }
+        }
       }
     } catch (error) {
-      console.error("Fetch Error:", error);
+      console.error("Streaming Error:", error);
       set({ pipelineStatus: 'idle' });
       alert("Failed to connect to backend API: " + error.message);
     }

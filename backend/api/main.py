@@ -1,6 +1,7 @@
 import os
 import uuid
 import asyncio
+import json
 from functools import partial
 from typing import Optional
 
@@ -8,6 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from langchain_openrouter import ChatOpenRouter
@@ -243,26 +246,22 @@ async def analyze_logs(payload: AnalyzeRequest):
         "errors": [],
     }
 
-    try:
+    async def event_generator():
+        try:
+            # We use stream() to get incremental updates
+            # LangGraph stream yields dicts of {node_name: state_update}
+            for update in GRAPH.stream(
+                initial_state,
+                {
+                    "callbacks": [tracer],
+                    "run_name": f"CrewOps API | {payload.source}",
+                }
+            ):
+                # We yield the node that just finished and the current state update
+                yield f"data: {json.dumps(update)}\n\n"
+            
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-        # Run graph in separate thread
-        result = await asyncio.to_thread(
-            GRAPH.invoke,
-            initial_state,
-            {
-                "callbacks": [tracer],
-                "run_name": f"CrewOps API | {payload.source}",
-            }
-        )
-
-        return {
-            "success": True,
-            "result": result,
-        }
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e),
-        )
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
