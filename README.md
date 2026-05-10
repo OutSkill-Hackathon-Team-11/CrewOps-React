@@ -426,4 +426,4 @@ The template uses an HTTP Request node to POST directly to the Slack Incoming We
 
 ---
 The Crew: Rakshit Rangarajan, Monalisa Das
-*Built for the AI Post-Training Hackathon | CrewOps Team*
+<br>*Built for the AI Post-Training Hackathon | CrewOps Team*
