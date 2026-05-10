@@ -206,14 +206,20 @@ python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 pip install -e .
+
+# Run the FastAPI server from /backend
 uvicorn api.main:app --reload --port 8000
+
+# Swagger UI: http://localhost:8000/docs
 ```
 
 #### 2. Frontend (React + Vite)
 ```bash
 # In a new terminal (root directory)
-pnpm install
-pnpm run dev
+npm install
+npm run dev
+
+# Vite app: http://localhost:5173
 ```
 
 ---
@@ -284,55 +290,85 @@ jupyter notebook Devops_Logs_Agent_Analyser.ipynb
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-CrewOps/
-├── app.py                                      # Streamlit entrypoint (st.navigation)
-├── run.py                                      # CLI entrypoint (headless pipeline)
-├── pyproject.toml                              # Package + extras [rag, ui, test]
-├── requirements.txt                            # Flat dependency list
-├── pytest.ini                                  # Test config (rootdir, markers)
-├── slack-template-n8n.json                     # Importable n8n workflow template
-│
-├── pages/
-│   ├── home.py                                 # Main dashboard: log input + agent run
-│   ├── 1_📊_Analytics.py                       # Pipeline analytics & history
-│   └── 2_🔬_RAG_Tuning.py                      # Interactive RAG tuning panel
-│
-├── src/crewops/
-│   ├── __init__.py
-│   ├── state.py                                # CrewOpsState TypedDict + reducers
-│   ├── agents.py                               # 7 node functions (classifier → notification)
-│   ├── graph.py                                # build_graph() + severity_router
-│   ├── prompts.py                              # 7 prompt templates (PromptTemplate)
-│   ├── parsers.py                              # Output parsers (severity, ADF, Slack blocks)
-│   └── rag.py                                 # LanceDB + LlamaIndex + HuggingFace embeddings
-│
-├── data/
-│   ├── knowledge_base/                         # RAG source documents (Markdown)
-│   │   ├── k8s_troubleshooting.md
-│   │   ├── incident_response_sop.md
-│   │   ├── remediation_playbooks.md
-│   │   ├── nginx_common_errors.md
-│   │   ├── database_troubleshooting.md
-│   │   └── other_systems_guide.md
-│   └── sample_logs/                            # Demo scenarios
-│       ├── mixed_incident.log                  # Payment + Redis + K8s cascade failure
-│       └── k8s_crashloop.log                   # OOMKilled / CrashLoopBackOff
-│
-├── tests/
-│   ├── conftest.py
-│   ├── fixtures.py
-│   ├── test_state.py                           # State schema + reducer tests
-│   ├── test_parsers.py                         # Parser unit tests
-│   ├── test_agents.py                          # Agent node tests (mocked LLMs)
-│   ├── test_graph.py                           # Graph topology + E2E routing tests
-│   ├── test_rag.py                             # RAG index + search tests
-│   └── test_integrations.py                    # JIRA + Notification integration tests
-│
-├── assets/                                     # Logo, screenshots, diagrams
-└── Devops_Logs_Agent_Analyser.ipynb            # Interactive notebook (30+ cells, 8 phases)
+CrewOps-React/
+|-- package.json                         # React/Vite scripts and frontend dependencies
+|-- vite.config.js                       # Vite configuration
+|-- index.html                           # React app entry HTML
+|-- README.md
+|
+|-- src/                                 # React frontend at repo root
+|   |-- main.jsx                         # React bootstrap
+|   |-- App.jsx                          # App shell and routing
+|   |-- index.css                        # Global styles
+|   |-- store.js                         # Zustand app state and API streaming logic
+|   |
+|   |-- config/
+|   |   `-- api.js                       # Default API and websocket URLs
+|   |
+|   |-- pages/
+|   |   |-- LandingPage.jsx              # Public landing page
+|   |   |-- Home.jsx                     # Dashboard, log input, live stream, results
+|   |   |-- Analytics.jsx                # Incident and pipeline analytics
+|   |   |-- RagTuning.jsx                # RAG/LLM tuning studio
+|   |   `-- Docs.jsx                     # Product/API documentation page
+|   |
+|   |-- components/
+|   |   |-- Sidebar.jsx
+|   |   |-- PipelineProgress.jsx
+|   |   |-- AgentCard.jsx
+|   |   |-- KpiCard.jsx
+|   |   |-- IssuesTable.jsx
+|   |   `-- CustomSelect.jsx
+|   |
+|   |-- data/
+|   |   |-- mockData.js
+|   |   `-- tuningConfig.js
+|   |
+|   `-- services/
+|       `-- openrouter.js
+|
+`-- backend/                             # Python backend and original backend app files
+    |-- requirements.txt                 # Backend dependency list
+    |-- pyproject.toml                   # Backend package metadata
+    |-- pytest.ini                       # Backend test config
+    |-- run.py                           # CLI/headless pipeline runner
+    |-- stream_logs.py                   # Live log stream helper
+    |-- app.py                           # Streamlit entrypoint, if used
+    |-- slack-template-n8n.json          # Importable n8n workflow template
+    |-- Devops_Logs_Agent_Analyser.ipynb # Interactive notebook
+    |
+    |-- api/                             # FastAPI application
+    |   |-- __init__.py
+    |   |-- main.py                      # FastAPI app, /analyze, /health, websocket, webhook routes
+    |   `-- tuning.py                    # /tuning models, presets, validation, pipeline run APIs
+    |
+    |-- pages/                           # Legacy Streamlit pages
+    |   |-- home.py
+    |   |-- 1_Analytics.py
+    |   `-- 2_RAG_Tuning.py
+    |
+    |-- src/crewops/                     # Core CrewOps agent package
+    |   |-- state.py                     # CrewOpsState TypedDict + reducers
+    |   |-- agents.py                    # 7 node functions
+    |   |-- graph.py                     # LangGraph build_graph() + severity router
+    |   |-- prompts.py                   # Prompt templates
+    |   |-- parsers.py                   # Severity, ADF, Slack block parsers
+    |   `-- rag.py                       # LanceDB + LlamaIndex + HuggingFace embeddings
+    |
+    |-- data/
+    |   |-- knowledge_base/              # RAG source Markdown docs
+    |   `-- sample_logs/                 # Demo log scenarios
+    |
+    `-- tests/                           # Backend unit/integration tests
+        |-- test_state.py
+        |-- test_parsers.py
+        |-- test_agents.py
+        |-- test_graph.py
+        |-- test_rag.py
+        `-- test_integrations.py
 ```
 
 ---
