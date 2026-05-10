@@ -12,6 +12,29 @@ import { PRESETS, AVAILABLE_MODELS } from '../data/tuningConfig';
 import CustomSelect from '../components/CustomSelect';
 
 const playbookNames = Object.keys(ragPlaybooks);
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const TRUNCATION_STRATEGIES = [
+  "Head (first N chars)",
+  "Tail (last N chars)",
+  "Head + Tail",
+];
+
+const formatApiError = async (response) => {
+  let message = `Request failed with status ${response.status}`;
+
+  try {
+    const data = await response.json();
+    if (typeof data.detail === 'string') {
+      message = data.detail;
+    } else if (Array.isArray(data.detail)) {
+      message = data.detail.map((err) => `${err.loc?.join('.') || 'field'}: ${err.msg}`).join('; ');
+    }
+  } catch {
+    // Keep the HTTP status fallback if the response body is not JSON.
+  }
+
+  return message;
+};
 
 export default function RagTuning() {
   const { tuning, updateTuning, applyPreset, models, fetchModels, isLoadingModels } = useStore();
@@ -36,26 +59,49 @@ export default function RagTuning() {
   }, []);
 
 
-  const handleRunTest = () => {
+  const handleRunTest = async () => {
     if (!testLog.trim()) return;
     setIsRunningTest(true);
     setTestResult(null);
-    
-    // Simulate pipeline run
-    setTimeout(() => {
-      const isKubernetes = testLog.toLowerCase().includes('pod') || testLog.toLowerCase().includes('k8s');
-      const isNginx = testLog.toLowerCase().includes('nginx');
-      
+
+    try {
+      const validationResponse = await fetch(`${API_URL}/tuning/validate-config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tuning),
+      });
+
+      if (!validationResponse.ok) {
+        throw new Error(await formatApiError(validationResponse));
+      }
+
+      const runResponse = await fetch(`${API_URL}/tuning/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          log_text: testLog,
+          config: tuning,
+        }),
+      });
+
+      if (!runResponse.ok) {
+        throw new Error(await formatApiError(runResponse));
+      }
+
+      const result = await runResponse.json();
       setTestResult({
-        log_type: isKubernetes ? "kubernetes" : isNginx ? "nginx" : "application",
-        kb_hits: Math.floor(Math.random() * tuning.rag_top_k) + 1,
-        error_lines_count: (testLog.match(/error|fail|critical/gi) || []).length,
-        severity: "P2 HIGH",
-        summary: "[Demo] Pipeline processed log with current parameters. RAG retrieval successful.",
+        ...result,
         timestamp: new Date().toLocaleTimeString(),
       });
+    } catch (error) {
+      setTestResult({
+        status: 'error',
+        error: error.message || 'Failed to run tuning pipeline.',
+        timestamp: new Date().toLocaleTimeString(),
+      });
+    } finally {
       setIsRunningTest(false);
-    }, 1500);
+    }
   };
 
   const handleExport = () => {
@@ -339,7 +385,7 @@ export default function RagTuning() {
                 <div>
                   <label className="text-[11px] text-slate-400 font-medium uppercase tracking-wider block mb-3">Truncation Strategy</label>
                   <div className="space-y-2">
-                    {["Head", "Tail", "Head + Tail"].map(strategy => (
+                    {TRUNCATION_STRATEGIES.map(strategy => (
                       <button
                         key={strategy}
                         onClick={() => updateTuning({ truncation_strategy: strategy })}
@@ -415,27 +461,44 @@ export default function RagTuning() {
               <div className="space-y-4">
                 <label className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">Live Results</label>
                 {testResult ? (
-                  <div className="h-48 bg-slate-950 border border-white/10 rounded-xl p-5 flex flex-col gap-4 overflow-auto animate-in">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                        <span className="text-[10px] text-slate-500 uppercase block mb-1">Log Type</span>
-                        <span className="text-sm font-bold text-white capitalize">{testResult.log_type}</span>
-                      </div>
-                      <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                        <span className="text-[10px] text-slate-500 uppercase block mb-1">KB Hits</span>
-                        <span className="text-sm font-bold text-white">{testResult.kb_hits}</span>
-                      </div>
-                    </div>
-                    <div className="bg-white/5 p-3 rounded-lg border border-white/5 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] text-slate-500 uppercase block mb-1">Severity Detection</span>
-                        <span className="text-xs font-bold text-amber-400">{testResult.severity}</span>
-                      </div>
-                      <AlertTriangle size={18} className="text-amber-500/50" />
-                    </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed italic">
-                      &quot;{testResult.summary}&quot;
-                    </p>
+                  <div className={`h-48 bg-slate-950 border rounded-xl p-5 flex flex-col gap-4 overflow-auto animate-in ${
+                    testResult.status === 'error' ? 'border-red-500/30' : 'border-white/10'
+                  }`}>
+                    {testResult.status === 'error' ? (
+                      <>
+                        <div className="bg-red-500/10 p-3 rounded-lg border border-red-500/20 flex items-start gap-3">
+                          <AlertTriangle size={18} className="text-red-400 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-[10px] text-red-300 uppercase block mb-1">Pipeline Error</span>
+                            <p className="text-xs text-slate-300 leading-relaxed">{testResult.error}</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-slate-600 font-mono">Last attempt: {testResult.timestamp}</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                            <span className="text-[10px] text-slate-500 uppercase block mb-1">Log Type</span>
+                            <span className="text-sm font-bold text-white capitalize">{testResult.log_type || 'Unknown'}</span>
+                          </div>
+                          <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                            <span className="text-[10px] text-slate-500 uppercase block mb-1">KB Hits</span>
+                            <span className="text-sm font-bold text-white">{testResult.kb_hits ?? 0}</span>
+                          </div>
+                        </div>
+                        <div className="bg-white/5 p-3 rounded-lg border border-white/5 flex items-center justify-between">
+                          <div>
+                            <span className="text-[10px] text-slate-500 uppercase block mb-1">Severity Detection</span>
+                            <span className="text-xs font-bold text-amber-400">{testResult.severity || 'Pending'}</span>
+                          </div>
+                          <AlertTriangle size={18} className="text-amber-500/50" />
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed italic">
+                          &quot;{testResult.summary || testResult.root_cause_analysis || 'Pipeline completed.'}&quot;
+                        </p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="h-48 bg-slate-950/50 border border-white/[0.03] border-dashed rounded-xl flex flex-col items-center justify-center text-slate-700 text-center p-6">
